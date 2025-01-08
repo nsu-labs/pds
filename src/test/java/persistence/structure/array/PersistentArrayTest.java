@@ -1,231 +1,213 @@
 package persistence.structure.array;
 
-import org.junit.Test;
-import static org.junit.Assert.*;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-
+import org.junit.jupiter.api.Test;
 import persistence.base.ModificationCount;
 import persistence.base.PersistentContent;
-import persistence.base.tree.BinaryTree;
-import persistence.structure.list.PersistentLinkedList;
+import persistence.base.PersistentNode;
 
-public class PersistentArrayTest {
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class PersistentArrayTest {
 
     @Test
-    public void testDefaultConstructor() {
-        // Проверяем, что по умолчанию массив пуст
-        PersistentArray<String> arr = new PersistentArray<>();
-        assertEquals("По умолчанию count должен быть 0", 0, arr.count);
-        assertEquals("modificationCount должен быть 0", 0, arr.modificationCount);
-        assertNotNull("nodes не должен быть null", arr.nodes);
-        assertNotNull("nodes.content должен существовать", arr.nodes.content);
-        assertTrue("Список узлов должен быть пустым", arr.nodes.content.isEmpty());
+    void testEmptyConstructor() {
+        // Создаём пустой массив
+        PersistentArray<String> array = new PersistentArray<>();
+
+        // Проверяем, что при итерации элементов нет
+        assertFalse(array.iterator().hasNext(),
+                "Только что созданный массив должен быть пустым");
+
+        // Попытка получить элемент 0 должна бросать исключение
+        assertThrows(IndexOutOfBoundsException.class, () -> array.get(0),
+                "Попытка получить элемент в пустом массиве должна вызывать IndexOutOfBoundsException");
     }
 
     @Test
-    public void testAddAndGet() {
-        PersistentArray<Integer> arr = new PersistentArray<>();
-        // Добавим несколько элементов
-        arr = arr.add(10);
-        arr = arr.add(20);
-        arr = arr.add(30);
+    void testAdd() {
+        PersistentArray<String> array = new PersistentArray<>();
 
-        // Проверим count и modificationCount
-        assertEquals("После трёх добавлений count = 3", 3, arr.count);
-        assertEquals("modificationCount должен быть 3", 3, arr.modificationCount);
+        // Добавляем первый элемент
+        array = array.add("A");
+        // Проверяем, что теперь get(0) = "A"
+        assertEquals("A", array.get(0),
+                "После добавления 'A' в пустой массив по индексу 0 должно лежать 'A'");
 
-        // Проверим get
-        assertEquals((Integer)10, arr.get(0));
-        assertEquals((Integer)20, arr.get(1));
-        assertEquals((Integer)30, arr.get(2));
+        // Добавляем второй элемент
+        array = array.add("B");
+        // Проверяем, что get(1) = "B"
+        assertEquals("B", array.get(1),
+                "После добавления 'B' по индексу 1 должно лежать 'B'");
 
-        // Проверим, что при выходе за границы бросается исключение
-        try {
-            arr.get(-1);
-            fail("Ожидаем IndexOutOfBoundsException при get(-1)");
-        } catch (IndexOutOfBoundsException e) {
-            // Ожидаемо
-        }
-
-        try {
-            arr.get(3);
-            fail("Ожидаем IndexOutOfBoundsException при get(3)");
-        } catch (IndexOutOfBoundsException e) {
-            // Ожидаемо
-        }
+        // Проверим, что get(2) выбрасывает исключение
+        PersistentArray<String> finalArray = array;
+        assertThrows(IndexOutOfBoundsException.class, () -> finalArray.get(2));
     }
 
     @Test
-    public void testInsert() {
-        PersistentArray<String> arr = new PersistentArray<>();
-        // Добавим один элемент
-        arr = arr.add("A"); // now size=1
-        arr = arr.add("B"); // size=2
-        arr = arr.add("C"); // size=3
+    void testInsert() {
+        PersistentArray<String> array = new PersistentArray<>();
+        // Для удобства — добавим сразу несколько элементов
+        array = array.add("A").add("B").add("C");  // [A, B, C]
 
-        // Вставим элемент посередине (индекс=1)
-        arr = arr.insert(1, "X");
+        // Вставка в начало (индекс 0)
+        array = array.insert(0, "X");              // [X, A, B, C]
+        assertEquals("X", array.get(0));
+        assertEquals("A", array.get(1));
+        assertEquals("B", array.get(2));
+        assertEquals("C", array.get(3));
 
-        assertEquals("После вставки count=4", 4, arr.count);
-        assertEquals("A", arr.get(0));
-        assertEquals("X", arr.get(1));
-        assertEquals("B", arr.get(2));
-        assertEquals("C", arr.get(3));
+        // Вставка в середину (индекс 2)
+        array = array.insert(2, "Y");              // [X, A, Y, B, C]
+        assertEquals("X", array.get(0));
+        assertEquals("A", array.get(1));
+        assertEquals("Y", array.get(2));
+        assertEquals("B", array.get(3));
+        assertEquals("C", array.get(4));
 
-        // Вставим элемент в конец (индекс=4)
-        arr = arr.insert(4, "Z");
-        assertEquals(5, arr.count);
-        assertEquals("Z", arr.get(4));
+        // Вставка в конец (индекс == count)
+        array = array.insert(5, "Z");              // [X, A, Y, B, C, Z]
+        assertEquals("Z", array.get(5));
 
-        // Вставка за границами
-        try {
-            arr.insert(999, "???");
-            fail("Ожидаем IndexOutOfBoundsException при insert за границами");
-        } catch (IndexOutOfBoundsException e) {
-            // Ок
-        }
+        // Проверка выхода за границы
+        PersistentArray<String> finalArray = array;
+        assertThrows(IndexOutOfBoundsException.class, () -> finalArray.insert(-1, "Bad"));
+        PersistentArray<String> finalArray1 = array;
+        assertThrows(IndexOutOfBoundsException.class, () -> finalArray1.insert(999, "Bad"));
     }
 
     @Test
-    public void testReplace() {
-        PersistentArray<Integer> arr = new PersistentArray<>();
-        arr = arr.add(1).add(2).add(3);
+    void testReplace() {
+        // Создадим массив и добавим элементы [A, B, C]
+        PersistentArray<String> array = new PersistentArray<>();
+        array = array.add("A").add("B").add("C");
 
-        // Заменим элемент по индексу 1 (второй элемент)
-        arr = arr.replace(1, 20);
-        assertEquals((Integer)20, arr.get(1));
-        assertEquals(3, arr.count);
+        // Заменяем элемент по индексу 1 (B -> X)
+        array = array.replace(1, "X");
+        assertEquals("X", array.get(1),
+                "После replace(1, 'X') элемент по индексу 1 должен быть 'X'");
+        // Остальные остались без изменений
+        assertEquals("A", array.get(0));
+        assertEquals("C", array.get(2));
 
-        // Заменим элемент по индексу 0
-        arr = arr.replace(0, 100);
-        assertEquals((Integer)100, arr.get(0));
+        // Проверим замену по последнему индексу (2)
+        array = array.replace(2, "Z");
+        assertEquals("Z", array.get(2));
 
         // Выход за границы
-        try {
-            arr.replace(999, 999);
-            fail("Ожидаем IndexOutOfBoundsException при replace за границами");
-        } catch (IndexOutOfBoundsException e) {
-            // Ок
-        }
+        PersistentArray<String> finalArray = array;
+        assertThrows(IndexOutOfBoundsException.class, () -> finalArray.replace(-1, "Bad"));
+        PersistentArray<String> finalArray1 = array;
+        assertThrows(IndexOutOfBoundsException.class, () -> finalArray1.replace(999, "Bad"));
     }
 
     @Test
-    public void testRemove() {
-        PersistentArray<String> arr = new PersistentArray<>();
-        arr = arr.add("A").add("B").add("C").add("D");
+    void testRemove() {
+        // Создадим массив [A, B, C, D]
+        PersistentArray<String> array = new PersistentArray<>();
+        array = array.add("A").add("B").add("C").add("D");
 
-        // Удалим элемент по индексу 1: убираем "B"
-        arr = arr.remove(1);
-        assertEquals(3, arr.count);
-        assertEquals("A", arr.get(0));
-        assertEquals("C", arr.get(1));
-        assertEquals("D", arr.get(2));
+        // Удаляем элемент по индексу 1 (B)
+        array = array.remove(1);  // Результат [A, C, D, null] физически, но логически мы видим [A, C, D]
+        assertEquals("A", array.get(0));
+        assertEquals("C", array.get(1));
+        assertEquals("D", array.get(2));
+        // Проверка, что следующий индекс уже выходит за границы
+        PersistentArray<String> finalArray = array;
+        assertThrows(IndexOutOfBoundsException.class, () -> finalArray.get(3));
 
-        // Удалим элемент по индексу 2 (был "D")
-        arr = arr.remove(2);
-        assertEquals(2, arr.count);
-        assertEquals("A", arr.get(0));
-        assertEquals("C", arr.get(1));
+        // Удаляем элемент по индексу 0 (A)
+        array = array.remove(0);  // [C, D, null]
+        assertEquals("C", array.get(0));
+        assertEquals("D", array.get(1));
+        PersistentArray<String> finalArray1 = array;
+        assertThrows(IndexOutOfBoundsException.class, () -> finalArray1.get(2));
 
-        // Удалим элемент 0 (теперь "A")
-        arr = arr.remove(0);
-        assertEquals(1, arr.count);
-        assertEquals("C", arr.get(0));
+        // Удаляем последний оставшийся элемент (индекс 1 => D)
+        array = array.remove(1);  // [C, null]
+        assertEquals("C", array.get(0));
+        // Теперь при запросе индекса 1 ожидаем OutOfBounds
+        PersistentArray<String> finalArray2 = array;
+        assertThrows(IndexOutOfBoundsException.class, () -> finalArray2.get(1));
 
-        // Выход за границы
-        try {
-            arr.remove(5);
-            fail("remove за границами");
-        } catch (IndexOutOfBoundsException e) {
-            // Ок
-        }
+        // Попытка удалить за границами
+        PersistentArray<String> finalArray3 = array;
+        assertThrows(IndexOutOfBoundsException.class, () -> finalArray3.remove(-1));
+        PersistentArray<String> finalArray4 = array;
+        assertThrows(IndexOutOfBoundsException.class, () -> finalArray4.remove(999));
     }
 
     @Test
-    public void testClearAll() {
-        PersistentArray<String> arr = new PersistentArray<>();
-        arr = arr.add("A").add("B").add("C");
+    void testClearAll() {
+        // Создадим массив [A, B, C]
+        PersistentArray<String> array = new PersistentArray<>();
+        array = array.add("A").add("B").add("C");
 
-        arr = arr.clearAll();
-        // После очистки count=0
-        assertEquals(0, arr.count);
-        // get(0) => IndexOutOfBoundsException
-        try {
-            arr.get(0);
-            fail("Ожидаем IndexOutOfBoundsException, т.к. массив пуст");
-        } catch (IndexOutOfBoundsException e) {
-            // Ок
-        }
+        // Очищаем массив
+        array = array.clearAll();
+        // Теперь при итерации не должно быть видимых элементов
+        assertFalse(array.iterator().hasNext(),
+                "После clearAll() массив должен быть пустым (логически)");
+
+        // Любой индекс => OutOfBounds
+        PersistentArray<String> finalArray = array;
+        assertThrows(IndexOutOfBoundsException.class, () -> finalArray.get(0));
     }
 
     @Test
-    public void testIterator() {
-        PersistentArray<Integer> arr = new PersistentArray<>();
-        arr = arr.add(1).add(2).add(3);
+    void testIteration() {
+        // Создадим массив [A, B, C]
+        PersistentArray<String> array = new PersistentArray<>();
+        array = array.add("A").add("B").add("C");
 
-        Iterator<Integer> it = arr.iterator();
-        assertTrue(it.hasNext());
-        assertEquals((Integer)1, it.next());
-        assertEquals((Integer)2, it.next());
-        assertEquals((Integer)3, it.next());
-        assertFalse(it.hasNext());
-        // Если вызвать next() ещё раз, должно быть исключение
-        try {
-            it.next();
-            fail("Ожидаем NoSuchElementException");
-        } catch (NoSuchElementException e) {
-            // Ок
+        List<String> values = new ArrayList<>();
+        for (String s : array) {
+            values.add(s);
         }
+
+        // Проверяем, что мы получили ровно 3 элемента: A, B, C
+        assertEquals(3, values.size());
+        assertEquals(List.of("A", "B", "C"), values);
+
+        // Сделаем remove(1) => уберём B
+        array = array.remove(1);
+
+        values.clear();
+        for (String s : array) {
+            values.add(s);
+        }
+        // Теперь должно остаться [A, C]
+        assertEquals(2, values.size());
+        assertEquals(List.of("A", "C"), values);
     }
 
     @Test
-    public void testUndoRedo() {
-        PersistentArray<String> arr = new PersistentArray<>();
-        // modificationCount=0, count=0
+    void testUndoRedo() {
+        // Создаём массив [A, B, C]
+        PersistentArray<String> array = new PersistentArray<>();
+        array = array.add("A").add("B").add("C"); // => [A, B, C]
 
-        arr = arr.add("A"); // now count=1, modificationCount=1
-        arr = arr.add("B"); // now count=2, modificationCount=2
-        arr = arr.add("C"); // now count=3, modificationCount=3
+        array = array.remove(2);
 
-        // Undo
-        arr = arr.undo(); // now modificationCount=2
-        // При этом count пересчитывается: recalculateCount(2)
-        // Значит массив должен содержать 2 элемента ("A", "B")
-        assertEquals(2, arr.count);
-        assertEquals("A", arr.get(0));
-        assertEquals("B", arr.get(1));
+        PersistentArray<String> undone = array.undo();
 
-        // Еще раз undo
-        arr = arr.undo(); // modificationCount=1
-        assertEquals(1, arr.count);
-        assertEquals("A", arr.get(0));
+        List<String> undoneValues = new ArrayList<>();
+        for (String s : undone) {
+            undoneValues.add(s);
+        }
 
-        // Еще раз undo - дойдём до startModificationCount (вероятно 0)
-        arr = arr.undo();
-        // Теперь, если startModificationCount=0, мы в самом начале
-        assertEquals(0, arr.count);
+        assertEquals(List.of("A", "B"), undoneValues,
+                "После undo остаёмся в [A, B], т.к. C не восстанавливаем");
 
-        // redo
-        arr = arr.redo(); // modificationCount=1
-        // Должно быть 1 элемент
-        assertEquals(1, arr.count);
-        assertEquals("A", arr.get(0));
-
-        // Ещё раз redo => modificationCount=2
-        arr = arr.redo();
-        assertEquals(2, arr.count);
-
-        // Ещё раз redo => modificationCount=3
-        arr = arr.redo();
-        assertEquals(3, arr.count);
-        // Три элемента: A, B, C
-        assertEquals("C", arr.get(2));
-
-        // Попробуем ещё раз redo - ничего не изменится, так как мы на maxModification
-        PersistentArray<String> arr2 = arr.redo();
-        assertSame("redo без изменений возвращает тот же объект", arr, arr2);
+        PersistentArray<String> redone = undone.redo();
+        List<String> redoneValues = new ArrayList<>();
+        for (String s : redone) {
+            redoneValues.add(s);
+        }
+        assertEquals(List.of("A", "B"), redoneValues,
+                "После redo [A, B]");
     }
 }

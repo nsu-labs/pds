@@ -1,147 +1,158 @@
 package persistence.base.tree;
 
-import org.junit.Test;
-import static org.junit.Assert.*;
-import java.util.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class BinaryTreeTest {
+import java.util.List;
+import java.util.Map;
 
-    @Test
-    public void testInsertAndFind() {
-        BinaryTree<Integer, String> tree = new BinaryTree<>();
+import static org.junit.jupiter.api.Assertions.*;
 
-        // Изначально дерево пустое
-        assertNull("find на пустом дереве должен возвращать null", tree.find(10));
+class BinaryTreeTest {
 
-        // Вставляем элемент (10 -> "ten")
-        tree.insert(10, "ten");
-        assertNotNull("После вставки, элемент с ключом 10 должен существовать", tree.find(10));
-        assertEquals("ten", tree.find(10).data);
+    private BinaryTree<Integer, String> tree;
 
-        // Повторная вставка по тому же ключу (обновление)
-        tree.insert(10, "TEN");
-        assertEquals("Обновлённое значение по ключу 10 должно быть TEN", "TEN", tree.find(10).data);
-
-        // Вставляем ещё несколько элементов
-        tree.insert(5, "five");
-        tree.insert(20, "twenty");
-        tree.insert(15, "fifteen");
-
-        // Проверяем find()
-        assertEquals("five", tree.find(5).data);
-        assertEquals("twenty", tree.find(20).data);
-        assertEquals("fifteen", tree.find(15).data);
-        // Невставленный элемент
-        assertNull("find(100) не должен ничего вернуть, т.к. 100 не вставляли", tree.find(100));
+    @BeforeEach
+    void setUp() {
+        tree = new BinaryTree<>();
     }
 
+    /**
+     * Тест на добавление одного элемента в дерево и проверку get.
+     */
     @Test
-    public void testGetAndContains() {
-        BinaryTree<Integer, String> tree = new BinaryTree<>();
-        tree.insert(1, "one");
-        tree.insert(2, "two");
-        tree.insert(3, "three");
-
-        // Проверяем get()
-        assertEquals("one", tree.get(1));
-        assertEquals("two", tree.get(2));
-        assertEquals("three", tree.get(3));
-        assertNull(tree.get(999));
-
-        // Проверяем contains()
-        assertTrue(tree.contains(1));
-        assertTrue(tree.contains(2));
-        assertTrue(tree.contains(3));
-        assertFalse(tree.contains(999));
+    void testInsertSingleNodeAndGet() {
+        tree.insert(10, "value10");
+        assertEquals("value10", tree.get(10),
+                "После вставки ключа 10 должен вернуться 'value10'");
+        assertNotNull(tree.root, "Корень дерева не должен быть null");
+        assertEquals(Color.Black, tree.root.colour, "Корень после вставки должен быть чёрным");
     }
 
+    /**
+     * Тест на добавление нескольких элементов и проверку поиска.
+     */
     @Test
-    public void testFindNearestLess() {
-        BinaryTree<Integer, String> tree = new BinaryTree<>();
-        // Вставляем несколько ключей
-        tree.insert(10, "ten");
-        tree.insert(5, "five");
-        tree.insert(3, "three");
-        tree.insert(12, "twelve");
-        tree.insert(11, "eleven");
+    void testInsertMultipleNodesAndFind() {
+        tree.insert(10, "value10");
+        tree.insert(5, "value5");
+        tree.insert(15, "value15");
 
-        // Ищем ближайший меньший для 10
-        // (сам 10 <= 10), значит он сам
-        assertEquals("ten", tree.findNearestLess(10));
+        // Проверяем, что все ключи нашлись
+        assertNotNull(tree.find(10), "Ключ 10 должен присутствовать в дереве");
+        assertNotNull(tree.find(5),  "Ключ 5 должен присутствовать в дереве");
+        assertNotNull(tree.find(15), "Ключ 15 должен присутствовать в дереве");
 
-        // Для 9 ближайший меньший - ключ 5
-        assertEquals("five", tree.findNearestLess(9));
-
-        // Для ключа 12
-        // (12 есть в дереве => "twelve")
-        assertEquals("twelve", tree.findNearestLess(12));
-
-        // Для 13 - ближайший меньший 12
-        assertEquals("twelve", tree.findNearestLess(13));
-
-        // Для 2 - ничего нет (3 - уже больше)
-        assertNull("Ожидаем null, т.к. нет ключей <= 2", tree.findNearestLess(2));
+        // Проверяем, что поиска несуществующих ключей возвращает null
+        assertNull(tree.find(999),   "Ключ 999 не должен присутствовать в дереве");
     }
 
+    /**
+     * Тест на обновление значения у уже существующего ключа.
+     */
     @Test
-    public void testToListAndIterator() {
-        BinaryTree<Integer, String> tree = new BinaryTree<>();
-        tree.insert(10, "ten");
-        tree.insert(5, "five");
-        tree.insert(15, "fifteen");
+    void testInsertDuplicateKey() {
+        tree.insert(10, "value10");
+        tree.insert(10, "newValue10"); // Повторно вставляем с тем же ключом
+
+        assertEquals("newValue10", tree.get(10),
+                "При повторной вставке значение должно обновиться");
+        assertEquals(1, tree.toList().size(),
+                "Должен существовать ровно один узел, так как ключ 10 был один");
+    }
+
+    /**
+     * Тест на метод contains.
+     */
+    @Test
+    void testContains() {
+        tree.insert(10, "value10");
+        tree.insert(5, "value5");
+        tree.insert(15, "value15");
+
+        assertTrue(tree.contains(10), "Дерево должно содержать ключ 10");
+        assertTrue(tree.contains(5),  "Дерево должно содержать ключ 5");
+        assertTrue(tree.contains(15), "Дерево должно содержать ключ 15");
+        assertFalse(tree.contains(999), "Ключ 999 не должен содержаться в дереве");
+    }
+
+    /**
+     * Тест на метод findNearestLess.
+     */
+    @Test
+    void testFindNearestLess() {
+        tree.insert(10, "value10");
+        tree.insert(5,  "value5");
+        tree.insert(15, "value15");
+        tree.insert(7,  "value7");
+
+
+        String nearest = tree.findNearestLess(8);
+        assertEquals("value7", nearest, "Ближайший меньший или равный ключ для 8 это 7");
+
+
+        nearest = tree.findNearestLess(5);
+        assertEquals("value5", nearest, "Ближайший меньший или равный ключ для 5 это 5 же");
+
+
+        nearest = tree.findNearestLess(2);
+        assertNull(nearest, "Если запрошенное число меньше минимального ключа, возвращается null");
+
+
+        nearest = tree.findNearestLess(14);
+        assertEquals("value10", nearest,
+                "Ближайший меньший или равный ключ для 14 это 10");
+
+
+        nearest = tree.findNearestLess(999);
+        assertEquals("value15", nearest,
+                "Если число больше всех ключей, возвращаем значение для ключа 15");
+    }
+
+    /**
+     * Тест на метод toList и корректный порядок (in-order).
+     */
+    @Test
+    void testToList() {
+        tree.insert(10, "value10");
+        tree.insert(5,  "value5");
+        tree.insert(15, "value15");
+        tree.insert(7,  "value7");
+        tree.insert(3,  "value3");
 
         List<Map.Entry<Integer, String>> list = tree.toList();
-        assertEquals("Размер списка должен быть 3", 3, list.size());
 
-        // Содержит ли список корректные пары?
-        // Не гарантируется порядок, если дерево не является BST безупречно,
-        // но обычно при обходе 'toList' мы ожидаем отсортированный (in-order).
-        // Проверим только наличие.
-        boolean found10 = false, found5 = false, found15 = false;
-        for (Map.Entry<Integer, String> e : list) {
-            if (e.getKey() == 10) {
-                assertEquals("ten", e.getValue());
-                found10 = true;
-            }
-            if (e.getKey() == 5) {
-                assertEquals("five", e.getValue());
-                found5 = true;
-            }
-            if (e.getKey() == 15) {
-                assertEquals("fifteen", e.getValue());
-                found15 = true;
-            }
-        }
-        assertTrue("Ключ 10 должен присутствовать", found10);
-        assertTrue("Ключ 5 должен присутствовать", found5);
-        assertTrue("Ключ 15 должен присутствовать", found15);
+        // Проверим, что в списке 5 элементов
+        assertEquals(5, list.size(), "Должно быть 5 элементов в списке");
 
-        // Теперь проверим итератор
-        Iterator<Map.Entry<Integer, String>> it = tree.iterator();
-        int count = 0;
-        while (it.hasNext()) {
-            Map.Entry<Integer, String> e = it.next();
-            count++;
-        }
-        assertEquals("Количество элементов через итератор должно совпадать с size()", 3, count);
+        // Список должен быть отсортирован по возрастанию ключей (in-order обход)
+        // Ключи: 3, 5, 7, 10, 15
+        assertEquals(3,  list.get(0).getKey());
+        assertEquals(5,  list.get(1).getKey());
+        assertEquals(7,  list.get(2).getKey());
+        assertEquals(10, list.get(3).getKey());
+        assertEquals(15, list.get(4).getKey());
     }
 
+    /**
+     * Тест на работу итератора.
+     * Аналогичен тесту toList, но проверяем итерацию напрямую.
+     */
     @Test
-    public void testInsertFixUpScenario() {
-        // Здесь можно протестировать более сложные сценарии,
-        // где при вставке красно-черного узла происходит rotate, recolor и т.п.
-        // Однако для упрощения ограничимся базовым тестом,
-        // главное — не падает, корень чёрный.
-        BinaryTree<Integer, String> tree = new BinaryTree<>();
-        // Вставляем несколько узлов
-        tree.insert(10, "ten");
-        tree.insert(20, "twenty");
-        tree.insert(15, "fifteen");
-        // и т.д.
+    void testIterator() {
+        tree.insert(10, "value10");
+        tree.insert(5,  "value5");
+        tree.insert(15, "value15");
 
-        assertNotNull(tree.root);
-        assertEquals("Корень должен быть 10", (Integer)10, tree.root.key);
-        // Проверим, что корень — чёрный
-        assertEquals("Корень должен быть чёрного цвета", Color.Black, tree.root.colour);
+        int count = 0;
+        Integer[] expectedKeys = {5, 10, 15};
+        String[] expectedValues = {"value5", "value10", "value15"};
+
+        for (Map.Entry<Integer, String> entry : tree) {
+            assertEquals(expectedKeys[count], entry.getKey());
+            assertEquals(expectedValues[count], entry.getValue());
+            count++;
+        }
+        assertEquals(3, count, " / тератор должен был вернуть ровно 3 элемента");
     }
 }

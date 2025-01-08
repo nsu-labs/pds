@@ -48,7 +48,7 @@ public class PersistentArray<T> extends BasePersistentCollection<Integer, T, Lis
         // Проходим по всем узлам массива.
         for (var i = 0; i < nodes.content.size(); i++) {
             PersistentNode<T> node = nodes.content.get(i); // Текущий узел.
-            int finalI = i; // Индекс узла.
+            int finalI = i;
 
             // Собираем все модификации узла, которые произошли до текущего шага.
             List<Map.Entry<Integer, Map.Entry<Integer, T>>> neededModifications = node
@@ -118,24 +118,41 @@ public class PersistentArray<T> extends BasePersistentCollection<Integer, T, Lis
     /**
      * Реализация удаления элемента из массива.
      */
+
     private void removeImpl(PersistentContent<List<PersistentNode<T>>> content, int modificationCount, int index) {
         content.update(c -> {
-            // Сдвигаем элементы влево, начиная с удаляемого индекса.
+            // Сдвигаем элементы влево, начиная с удаляемого индекса
             for (var i = index; i < c.size() - 1; i++) {
                 c.get(i).update(modificationCount + 1, c.get(i + 1).value(modificationCount));
             }
-            // Удаляем последний элемент.
-            c.get(c.size() - 1).update(modificationCount + 1, null);
+            // А вместо записи `null` в последний элемент — физически убираем его
+            c.remove(c.size() - 1);
         });
     }
+
+    //private void removeImpl(PersistentContent<List<PersistentNode<T>>> content, int modificationCount, int index) {
+    //    content.update(c -> {
+    //        // Сдвигаем элементы влево, начиная с удаляемого индекса.
+    //        for (var i = index; i < c.size() - 1; i++) {
+    //           c.get(i).update(modificationCount + 1, c.get(i + 1).value(modificationCount));
+    //        }
+    //        // Удаляем последний элемент.
+    //        c.get(c.size() - 1).update(modificationCount + 1, null);
+    //    });
+    //}
 
     /**
      * Реализация очистки массива.
      */
+
     private void clear(PersistentContent<List<PersistentNode<T>>> content, int modificationCount) {
-        // Устанавливаем все значения в узлах равными null.
-        content.update(c -> c.forEach(n -> n.update(modificationCount + 1, null)));
+        content.update(c -> c.clear()); // физически делаем c.size() = 0
     }
+
+    //private void clear(PersistentContent<List<PersistentNode<T>>> content, int modificationCount) {
+    //    // Устанавливаем все значения в узлах равными null.
+    //    content.update(c -> c.forEach(n -> n.update(modificationCount + 1, null)));
+    //}
 
     /**
      * Добавление элемента в конец массива.
@@ -238,9 +255,7 @@ public class PersistentArray<T> extends BasePersistentCollection<Integer, T, Lis
         return nodes.content.get(index).value(modificationCount); // Возвращаем значение на текущем шаге.
     }
 
-    /**
-     * Итератор для перебора элементов массива.
-     */
+
     public Iterator<T> iterator() {
         return nodes.content
                 .stream()

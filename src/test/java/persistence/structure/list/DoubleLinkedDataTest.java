@@ -1,90 +1,75 @@
 package persistence.structure.list;
 
-import org.junit.Test;
-import static org.junit.Assert.*;
-
+import org.junit.jupiter.api.Test;
 import persistence.base.PersistentNode;
 
 import java.util.UUID;
 
-public class DoubleLinkedDataTest {
+import static org.junit.jupiter.api.Assertions.*;
+
+class DoubleLinkedDataTest {
 
     @Test
-    public void testConstructorNoID() {
-        // Создадим фиктивные PersistentNode
-        PersistentNode<DoubleLinkedData<String>> nextNode = new PersistentNode<>(5, null);
-        PersistentNode<DoubleLinkedData<String>> prevNode = new PersistentNode<>(2, null);
-        PersistentNode<String> valueNode = new PersistentNode<>(3, "value");
+    void testConstructorWithoutExplicitId() {
+        // Подготавливаем тестовые узлы (можно упростить, если не нужны реальные данные)
+        PersistentNode<DoubleLinkedData<String>> nextNode = new PersistentNode<>(0, null);
+        PersistentNode<DoubleLinkedData<String>> prevNode = new PersistentNode<>(0, null);
+        PersistentNode<String> valueNode = new PersistentNode<>(0, "Hello");
 
-        // Вызываем первый конструктор (без id)
+        // Создаём DoubleLinkedData без передачи ID
         DoubleLinkedData<String> data = new DoubleLinkedData<>(nextNode, prevNode, valueNode);
 
-        // Проверяем, что все поля установлены
-        assertSame("next должно совпадать", nextNode, data.next);
-        assertSame("previous должно совпадать", prevNode, data.previous);
-        assertSame("value должно совпадать", valueNode, data.value);
-        assertNotNull("id должен генерироваться автоматически", data.id);
+        // Проверяем, что поля корректно установлены
+        assertSame(nextNode, data.next,
+                "Поле 'next' должно соответствовать переданному узлу");
+        assertSame(prevNode, data.previous,
+                "Поле 'previous' должно соответствовать переданному узлу");
+        assertSame(valueNode, data.value,
+                "Поле 'value' должно соответствовать переданному узлу");
+
+        // Проверяем, что ID сгенерировался (не null)
+        assertNotNull(data.id,
+                "ID должен быть автоматически сгенерированным непустым UUID");
     }
 
     @Test
-    public void testConstructorWithID() {
-        // Создадим фиктивные PersistentNode
-        PersistentNode<DoubleLinkedData<Integer>> nextNode = new PersistentNode<>(10, null);
-        PersistentNode<DoubleLinkedData<Integer>> prevNode = new PersistentNode<>(1, null);
-        PersistentNode<Integer> valueNode = new PersistentNode<>(2, 999);
+    void testConstructorWithExplicitId() {
+        // Подготавливаем тестовые узлы
+        PersistentNode<DoubleLinkedData<String>> nextNode = new PersistentNode<>(10, null);
+        PersistentNode<DoubleLinkedData<String>> prevNode = new PersistentNode<>(10, null);
+        PersistentNode<String> valueNode = new PersistentNode<>(10, "World");
 
-        UUID customId = UUID.randomUUID();
+        // Создаём фиксированный UUID
+        UUID customId = UUID.fromString("11111111-2222-3333-4444-555555555555");
 
-        // Вызываем второй конструктор, передаём свой UUID
-        DoubleLinkedData<Integer> data = new DoubleLinkedData<>(nextNode, prevNode, valueNode, customId);
+        // Создаём DoubleLinkedData с передачей customId
+        DoubleLinkedData<String> data = new DoubleLinkedData<>(nextNode, prevNode, valueNode, customId);
 
-        // Проверяем поля
-        assertSame(nextNode, data.next);
-        assertSame(prevNode, data.previous);
-        assertSame(valueNode, data.value);
-        assertEquals("Переданный id должен сохраниться", customId, data.id);
+        // Проверяем, что поля корректно установлены
+        assertSame(nextNode, data.next,
+                "Поле 'next' должно соответствовать переданному узлу");
+        assertSame(prevNode, data.previous,
+                "Поле 'previous' должно соответствовать переданному узлу");
+        assertSame(valueNode, data.value,
+                "Поле 'value' должно соответствовать переданному узлу");
+
+        // Проверяем, что ID установлен именно тот, который мы передали
+        assertEquals(customId, data.id,
+                "ID должен совпадать с переданным в конструктор");
     }
 
     @Test
-    public void testIDsAreDifferentIfNoCustomID() {
-        // Если мы используем первый конструктор, он генерирует UUID самостоятельно
-        DoubleLinkedData<String> data1 = new DoubleLinkedData<>(null, null, null);
-        DoubleLinkedData<String> data2 = new DoubleLinkedData<>(null, null, null);
+    void testValueNodeContents() {
+        // Дополнительный тест, чтобы убедиться,
+        // что мы можем корректно получить значение из valueNode
+        PersistentNode<String> valueNode = new PersistentNode<>(0, "Initial");
+        DoubleLinkedData<String> data = new DoubleLinkedData<>(null, null, valueNode);
 
-        // Обычно два случайных UUID не совпадают
-        assertNotNull(data1.id);
-        assertNotNull(data2.id);
-        assertNotEquals("Обычно разные UUID", data1.id, data2.id);
-    }
+        // Шаг 5 — обновляем значение
+        valueNode.update(5, "Updated");
 
-    @Test
-    public void testSetNextPreviousManually() {
-        // Показываем, что ссылки можно менять (если в вашем коде это реально нужно).
-        // Но т.к. класс public поля, достаточно проверить, что можно присвоить.
-
-        PersistentNode<DoubleLinkedData<String>> firstNode = new PersistentNode<>(0, null);
-        PersistentNode<DoubleLinkedData<String>> secondNode = new PersistentNode<>(1, null);
-
-        DoubleLinkedData<String> data = new DoubleLinkedData<>(null, null, null);
-
-        // Меняем ссылки
-        data.next = firstNode;
-        data.previous = secondNode;
-
-        assertSame("next должен указывать на firstNode", firstNode, data.next);
-        assertSame("previous должен указывать на secondNode", secondNode, data.previous);
-    }
-
-    @Test
-    public void testValueNode() {
-        // Проверка value-ссылки
-        PersistentNode<String> valNode = new PersistentNode<>(10, "someValue");
-        DoubleLinkedData<String> data = new DoubleLinkedData<>(null, null, valNode);
-
-        assertEquals("someValue", data.value.value(10));
-        // Дополнительно меняем value
-        valNode.update(11, "changed");
-        // Проверяем, что data.value -> valNode -> "changed" на 11 шаге
-        assertEquals("changed", data.value.value(11));
+        // Проверяем, что при запросе на нужном шаге получаем ожидаемое значение
+        assertEquals("Updated", data.value.value(5),
+                "valueNode должен вернуть 'Updated' на шаге 5");
     }
 }

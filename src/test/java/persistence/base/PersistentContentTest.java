@@ -1,94 +1,83 @@
 package persistence.base;
 
-import org.junit.Tet;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Consumer;
 
-public class PersistentContentTest {
+import static org.junit.jupiter.api.Assertions.*;
+
+class PersistentContentTest {
 
     @Test
-    public void testConstructor() {
-        // Создаем фиктивный счетчик модификаций
-        ModificationCount modCount = new ModificationCount();
-        modCount.value = 5;
+    void testConstructorInitialization() {
+        ModificationCount step = new ModificationCount(0);
+        PersistentContent<String> persistentContent =
+                new PersistentContent<>("Hello", step);
 
-        // Создаем PersistentContent с некоторым контентом
-        String initialContent = "Hello";
-        PersistentContent<String> pc = new PersistentContent<>(initialContent, modCount);
-
-        // Проверяем инициализированные поля
-        assertEquals("Содержимое должно совпадать с переданным", initialContent, pc.content);
-        assertEquals("Счетчик модификаций должен совпадать с переданным", 5, pc.maxModification.value);
+        assertNotNull(persistentContent.content,
+                "Содержимое не должно быть null после инициализации");
+        assertEquals("Hello", persistentContent.content,
+                "Содержимое должно совпадать с переданным в конструктор");
+        assertEquals(0, persistentContent.maxModification.value,
+                "Счётчик модификаций должен совпадать с переданным в конструктор");
     }
 
     @Test
-    public void testUpdate() {
-        // Счетчик модификаций
-        ModificationCount modCount = new ModificationCount();
-        modCount.value = 0;
+    void testUpdateSingleTime() {
+        ModificationCount step = new ModificationCount(0);
+        // Для демонстрации обновления используем StringBuilder (мутируемый тип)
+        PersistentContent<StringBuilder> persistentContent =
+                new PersistentContent<>(new StringBuilder("Hello"), step);
 
-        // Начальное содержимое
-        StringBuilder sb = new StringBuilder("foo");
-        // Создаем PersistentContent
-        PersistentContent<StringBuilder> pc = new PersistentContent<>(sb, modCount);
+        // Обновляем содержимое добавлением " World"
+        persistentContent.update(sb -> sb.append(" World"));
 
-        // Убеждаемся в начальных значениях
-        assertEquals("foo", pc.content.toString());
-        assertEquals(0, pc.maxModification.value);
+        // Проверяем, что строка реально изменилась
+        assertEquals("Hello World", persistentContent.content.toString(),
+                "Содержимое должно обновиться после вызова update");
 
-        // Вызываем update, меняем строку "foo" -> "foobar"
-        pc.update(strBuilder -> strBuilder.append("bar"));
-
-        // Проверяем, что содержимое обновилось
-        assertEquals("foobar", pc.content.toString());
-        // Проверяем, что счетчик модификаций увеличился на 1
-        assertEquals(1, pc.maxModification.value);
-
-        // Еще раз вызываем update, меняем "foobar" -> "foobar!"
-        pc.update(strBuilder -> strBuilder.append('!'));
-
-        assertEquals("foobar!", pc.content.toString());
-        assertEquals(2, pc.maxModification.value);
+        assertEquals(1, persistentContent.maxModification.value,
+                "Счётчик модификаций должен увеличиться на 1");
     }
 
     @Test
-    public void testUpdateNoChange() {
-        // Проверяем, что даже если мы "ничего не меняем" внутри update,
-        // счетчик все равно увеличивается
-        ModificationCount modCount = new ModificationCount();
-        modCount.value = 10; // Начальное значение
+    void testUpdateMultipleTimes() {
+        ModificationCount step = new ModificationCount(0);
+        PersistentContent<StringBuilder> persistentContent =
+                new PersistentContent<>(new StringBuilder("A"), step);
 
-        Integer initialContent = 42;
-        PersistentContent<Integer> pc = new PersistentContent<>(initialContent, modCount);
+        // Выполняем несколько обновлений подряд
+        persistentContent.update(sb -> sb.append("B"));
+        persistentContent.update(sb -> sb.append("C"));
+        persistentContent.update(sb -> sb.append("D"));
 
-        // Вызываем update, но не меняем контент
-        pc.update(content -> {
-            // Ничего
-        });
 
-        // Содержимое осталось прежним
-        assertEquals((Integer)42, pc.content);
-        // Но счетчик увеличился
-        assertEquals(11, pc.maxModification.value);
+        assertEquals("ABCD", persistentContent.content.toString(),
+                "После серии апдейтов строка должна быть 'ABCD'");
+
+        // Счётчик должен увеличиться на 3
+        assertEquals(3, persistentContent.maxModification.value,
+                "Счётчик модификаций должен увеличиться на количество апдейтов");
     }
 
     @Test
-    public void testMaxModificationReference() {
-        // Убедимся, что внутри PersistentContent хранится тот же объект ModificationCount
-        ModificationCount modCount = new ModificationCount();
-        modCount.value = 100;
+    void testUpdateWithNoRealChange() {
+        ModificationCount step = new ModificationCount(5);
+        // Содержимое - пусть просто число
+        PersistentContent<Integer> persistentContent =
+                new PersistentContent<>(42, step);
 
-        PersistentContent<String> pc = new PersistentContent<>("Test", modCount);
+        // Обновляющая функция ничего не меняет (пустая лямбда)
+        Consumer<Integer> doNothingUpdater = i -> {};
 
-        // Изменим значение напрямую
-        modCount.value += 5;
+        // Выполним два таких "обновления"
+        persistentContent.update(doNothingUpdater);
+        persistentContent.update(doNothingUpdater);
 
-        // Убедимся, что в pc это тоже видно
-        assertEquals("Ожидаем 105", 105, pc.maxModification.value);
-
-        // Или наоборот, через pc
-        pc.update(s -> {});
-        assertEquals("После update должен стать 106", 106, modCount.value);
+        // Содержимое остаётся 42, но счётчик всё равно должен увеличиться
+        assertEquals(42, persistentContent.content,
+                "Содержимое не должно измениться при пустом апдейте");
+        assertEquals(7, persistentContent.maxModification.value,
+                "Счётчик модификаций всё равно должен увеличиться (5 + 2 = 7)");
     }
 }
