@@ -25,8 +25,8 @@ class BinaryTreeTest {
         tree.insert(10, "value10");
         assertEquals("value10", tree.get(10),
                 "После вставки ключа 10 должен вернуться 'value10'");
-        assertNotNull(tree.root, "Корень дерева не должен быть null");
-        assertEquals(Color.Black, tree.root.colour, "Корень после вставки должен быть чёрным");
+        assertNotNull(tree.getRoot(), "Корень дерева не должен быть null");
+        assertEquals(Color.Black, tree.getRoot().getColour(), "Корень после вставки должен быть чёрным");
     }
 
     /**

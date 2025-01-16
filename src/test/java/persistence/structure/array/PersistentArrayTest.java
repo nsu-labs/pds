@@ -210,4 +210,57 @@ class PersistentArrayTest {
         assertEquals(List.of("A", "B"), redoneValues,
                 "После redo [A, B]");
     }
+
+    @Test
+    void testReassembleNodesAfterSeveralModifications() {
+        PersistentArray<String> array = new PersistentArray<>();
+        array = array.add("A");
+        array = array.add("B");
+        array = array.add("C");
+
+        array = array.remove(1);
+        array = array.add("X");
+
+        assertEquals(3, array.getCount(), "После нескольких операций массив должен содержать 3 элемента");
+        assertEquals("A", array.get(0));
+        assertEquals("C", array.get(1));
+        assertEquals("X", array.get(2));
+    }
+
+    @Test
+    void testReassembleNodesNoNeedToReassemble() {
+        PersistentArray<Integer> array = new PersistentArray<>();
+
+        array = array.add(10);
+        array = array.add(20);
+
+        assertEquals(2, array.getCount());
+        assertEquals(10, array.get(0));
+        assertEquals(20, array.get(1));
+
+        array = array.replace(1, 99);
+
+        assertEquals(2, array.getCount());
+        assertEquals(10, array.get(0));
+        assertEquals(99, array.get(1));
+    }
+
+    @Test
+    void testReassembleNodesWithUndoRedo() {
+        PersistentArray<String> array = new PersistentArray<>();
+        array = array.add("X");
+        array = array.add("Y");
+        array = array.add("Z");
+
+        array = array.remove(1);
+        array = array.undo();
+        array = array.redo();
+        array = array.add("W");
+
+        assertEquals(3, array.getCount());
+        assertEquals("X", array.get(0));
+        assertEquals("Z", array.get(1));
+        assertEquals("W", array.get(2));
+    }
+
 }

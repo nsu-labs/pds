@@ -14,11 +14,11 @@ class PersistentContentTest {
         PersistentContent<String> persistentContent =
                 new PersistentContent<>("Hello", step);
 
-        assertNotNull(persistentContent.content,
+        assertNotNull(persistentContent.getContent(),
                 "Содержимое не должно быть null после инициализации");
-        assertEquals("Hello", persistentContent.content,
+        assertEquals("Hello", persistentContent.getContent(),
                 "Содержимое должно совпадать с переданным в конструктор");
-        assertEquals(0, persistentContent.maxModification.value,
+        assertEquals(0, persistentContent.getMaxModification().getValue(),
                 "Счётчик модификаций должен совпадать с переданным в конструктор");
     }
 
@@ -33,10 +33,10 @@ class PersistentContentTest {
         persistentContent.update(sb -> sb.append(" World"));
 
         // Проверяем, что строка реально изменилась
-        assertEquals("Hello World", persistentContent.content.toString(),
+        assertEquals("Hello World", persistentContent.getContent().toString(),
                 "Содержимое должно обновиться после вызова update");
 
-        assertEquals(1, persistentContent.maxModification.value,
+        assertEquals(1, persistentContent.getMaxModification().getValue(),
                 "Счётчик модификаций должен увеличиться на 1");
     }
 
@@ -52,11 +52,11 @@ class PersistentContentTest {
         persistentContent.update(sb -> sb.append("D"));
 
 
-        assertEquals("ABCD", persistentContent.content.toString(),
+        assertEquals("ABCD", persistentContent.getContent().toString(),
                 "После серии апдейтов строка должна быть 'ABCD'");
 
         // Счётчик должен увеличиться на 3
-        assertEquals(3, persistentContent.maxModification.value,
+        assertEquals(3, persistentContent.getMaxModification().getValue(),
                 "Счётчик модификаций должен увеличиться на количество апдейтов");
     }
 
@@ -75,9 +75,9 @@ class PersistentContentTest {
         persistentContent.update(doNothingUpdater);
 
         // Содержимое остаётся 42, но счётчик всё равно должен увеличиться
-        assertEquals(42, persistentContent.content,
+        assertEquals(42, persistentContent.getContent(),
                 "Содержимое не должно измениться при пустом апдейте");
-        assertEquals(7, persistentContent.maxModification.value,
+        assertEquals(7, persistentContent.getMaxModification().getValue(),
                 "Счётчик модификаций всё равно должен увеличиться (5 + 2 = 7)");
     }
 }

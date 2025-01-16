@@ -146,4 +146,57 @@ class PersistentLinkedListTest {
         assertNull(list.get(0),
                 "get(0) => null, так как список пуст");
     }
+
+    @Test
+    void testReassembleNodesAfterSeveralModifications() {
+        list = list.addLast("A");
+        list = list.addLast("B");
+        list = list.addLast("C");
+
+        list = list.removeLast(); // [A, B]
+        list = list.addFirst("X"); // Ожидаем [X, A, B]
+
+        assertEquals(3, list.size(), "Список должен содержать 3 элемента");
+        assertEquals("X", list.get(0));
+        assertEquals("A", list.get(1));
+        assertEquals("B", list.get(2));
+    }
+
+    @Test
+    void testReassembleNodesNoNeedToReassemble() {
+        PersistentLinkedList<Integer> intList = new PersistentLinkedList<>();
+
+        intList = intList.addLast(10);
+        intList = intList.addLast(20);
+
+        assertEquals(2, intList.size());
+        assertEquals(10, intList.get(0));
+        assertEquals(20, intList.get(1));
+
+        intList = intList.replace(1, 99);
+        assertEquals(2, intList.size());
+        assertEquals(10, intList.get(0));
+        assertEquals(99, intList.get(1));
+    }
+
+    @Test
+    void testReassembleNodesWithUndoRedo() {
+        list = list.addLast("X");
+        list = list.addLast("Y");
+        list = list.addLast("Z");
+
+        list = list.removeFirst();
+        list = list.removeFirst();
+
+        list = list.undo();
+
+        list = list.redo();
+
+        list = list.addLast("W");
+
+        assertEquals(2, list.size(), "Должны остаться 2 элемента: Z, W");
+        assertEquals("Z", list.get(0));
+        assertEquals("W", list.get(1));
+    }
+
 }

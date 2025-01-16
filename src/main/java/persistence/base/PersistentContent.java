@@ -9,9 +9,9 @@ import java.util.function.Consumer;
  */
 public class PersistentContent<T> {
     // Содержимое, которое хранит объект
-    public T content;
+    private T content;
     // Счетчик модификаций
-    public ModificationCount maxModification;
+    private ModificationCount maxModification;
 
     /**
      * Конструктор для инициализации содержимого.
@@ -20,8 +20,8 @@ public class PersistentContent<T> {
      * @param step    Начальное значение счетчика модификаций.
      */
     public PersistentContent(T content, ModificationCount step) {
-        this.content = content; // Инициализируем содержимое
-        this.maxModification = step; // Инициализируем счетчик модификаций
+        this.setContent(content);
+        this.setMaxModification(step);
     }
 
     /**
@@ -30,7 +30,23 @@ public class PersistentContent<T> {
      * @param contentUpdater Лямбда или функция, обновляющая содержимое.
      */
     public void update(Consumer<T> contentUpdater) {
-        contentUpdater.accept(content); // Применяем обновление к содержимому
-        maxModification.value++; // Увеличиваем значение счетчика модификаций
+        contentUpdater.accept(getContent()); // Применяем обновление к содержимому
+        getMaxModification().setValue(getMaxModification().getValue() + 1); // Увеличиваем значение счетчика модификаций
+    }
+
+    public T getContent() {
+        return content;
+    }
+
+    public void setContent(T content) {
+        this.content = content;
+    }
+
+    public ModificationCount getMaxModification() {
+        return maxModification;
+    }
+
+    public void setMaxModification(ModificationCount maxModification) {
+        this.maxModification = maxModification;
     }
 }

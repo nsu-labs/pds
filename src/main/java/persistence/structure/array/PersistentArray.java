@@ -1,9 +1,6 @@
 package persistence.structure.array;
 
 import persistence.base.*;
-import persistence.structure.list.DoubleLinkedContent;
-import persistence.structure.list.DoubleLinkedData;
-import persistence.structure.list.PersistentLinkedList;
 
 import java.util.*;
 
@@ -46,13 +43,13 @@ public class PersistentArray<T> extends BasePersistentCollection<Integer, T, Lis
         ArrayList<Map.Entry<Integer, Map.Entry<Integer, T>>> allModifications = new ArrayList<>();
 
         // Проходим по всем узлам массива.
-        for (var i = 0; i < nodes.content.size(); i++) {
-            PersistentNode<T> node = nodes.content.get(i); // Текущий узел.
+        for (var i = 0; i < nodes.getContent().size(); i++) {
+            PersistentNode<T> node = nodes.getContent().get(i); // Текущий узел.
             int finalI = i;
 
             // Собираем все модификации узла, которые произошли до текущего шага.
             List<Map.Entry<Integer, Map.Entry<Integer, T>>> neededModifications = node
-                    .modifications
+                    .getModifications()
                     .toList()
                     .stream()
                     .filter(
@@ -68,7 +65,7 @@ public class PersistentArray<T> extends BasePersistentCollection<Integer, T, Lis
 
         // Применяем модификации к новой коллекции узлов.
         allModifications.forEach(m -> {
-            if (m.getKey() >= newContent.content.size()) {
+            if (m.getKey() >= newContent.getContent().size()) {
                 // Если узел новый, создаём его и добавляем в коллекцию.
                 newContent.update(c ->
                         c.add(new PersistentNode<>(m.getValue().getKey(), m.getValue().getValue())));
@@ -130,17 +127,6 @@ public class PersistentArray<T> extends BasePersistentCollection<Integer, T, Lis
         });
     }
 
-    //private void removeImpl(PersistentContent<List<PersistentNode<T>>> content, int modificationCount, int index) {
-    //    content.update(c -> {
-    //        // Сдвигаем элементы влево, начиная с удаляемого индекса.
-    //        for (var i = index; i < c.size() - 1; i++) {
-    //           c.get(i).update(modificationCount + 1, c.get(i + 1).value(modificationCount));
-    //        }
-    //        // Удаляем последний элемент.
-    //        c.get(c.size() - 1).update(modificationCount + 1, null);
-    //    });
-    //}
-
     /**
      * Реализация очистки массива.
      */
@@ -149,92 +135,87 @@ public class PersistentArray<T> extends BasePersistentCollection<Integer, T, Lis
         content.update(c -> c.clear()); // физически делаем c.size() = 0
     }
 
-    //private void clear(PersistentContent<List<PersistentNode<T>>> content, int modificationCount) {
-    //    // Устанавливаем все значения в узлах равными null.
-    //    content.update(c -> c.forEach(n -> n.update(modificationCount + 1, null)));
-    //}
-
     /**
      * Добавление элемента в конец массива.
      */
     public PersistentArray<T> add(T value) {
-        if (nodes.maxModification.value > modificationCount) {
+        if (nodes.getMaxModification().getValue() > modificationCount) {
             var res = reassembleNodes(); // Пересобираем узлы.
             addImpl(res, modificationCount, value); // Добавляем элемент.
-            return new PersistentArray<>(res, count + 1, modificationCount + 1);
+            return new PersistentArray<>(res, getCount() + 1, modificationCount + 1);
         }
 
         // Добавляем элемент в текущую коллекцию узлов.
         addImpl(nodes, modificationCount, value);
-        return new PersistentArray<>(nodes, count + 1, modificationCount + 1);
+        return new PersistentArray<>(nodes, getCount() + 1, modificationCount + 1);
     }
 
     /**
      * Вставка элемента в массив по указанному индексу.
      */
     public PersistentArray<T> insert(int index, T value) {
-        if (index < 0 || index > count) {
+        if (index < 0 || index > getCount()) {
             throw new IndexOutOfBoundsException(index);
         }
 
-        if (index == count) {
+        if (index == getCount()) {
             return add(value);
         }
 
-        if (nodes.maxModification.value > modificationCount) {
+        if (nodes.getMaxModification().getValue() > modificationCount) {
             var res = reassembleNodes(); // Пересобираем узлы.
             insertImpl(res, modificationCount, index, value); // Вставляем элемент.
-            return new PersistentArray<>(res, count + 1, modificationCount + 1);
+            return new PersistentArray<>(res, getCount() + 1, modificationCount + 1);
         }
 
         // Вставляем элемент в текущую коллекцию узлов.
         insertImpl(nodes, modificationCount, index, value);
-        return new PersistentArray<>(nodes, count + 1, modificationCount + 1);
+        return new PersistentArray<>(nodes, getCount() + 1, modificationCount + 1);
     }
 
     /**
      * Замена элемента по индексу.
      */
     public PersistentArray<T> replace(Integer index, T value) {
-        if (index < 0 || index > count) {
+        if (index < 0 || index > getCount()) {
             throw new IndexOutOfBoundsException(index);
         }
 
-        if (nodes.maxModification.value > modificationCount) {
+        if (nodes.getMaxModification().getValue() > modificationCount) {
             var res = reassembleNodes(); // Пересобираем узлы.
             replaceImpl(res, modificationCount, index, value); // Заменяем элемент.
-            return new PersistentArray<>(res, count, modificationCount + 1);
+            return new PersistentArray<>(res, getCount(), modificationCount + 1);
         }
 
         // Заменяем элемент в текущей коллекции узлов.
         replaceImpl(nodes, modificationCount, index, value);
-        return new PersistentArray<>(nodes, count, modificationCount + 1);
+        return new PersistentArray<>(nodes, getCount(), modificationCount + 1);
     }
 
     /**
      * Удаление элемента из массива по индексу.
      */
     public PersistentArray<T> remove(int index) {
-        if (index < 0 || index >= count) {
+        if (index < 0 || index >= getCount()) {
             throw new IndexOutOfBoundsException(index);
         }
 
-        if (nodes.maxModification.value > modificationCount) {
+        if (nodes.getMaxModification().getValue() > modificationCount) {
             var res = reassembleNodes(); // Пересобираем узлы.
             removeImpl(res, modificationCount, index); // Удаляем элемент.
-            return new PersistentArray<>(res, count - 1, modificationCount + 1);
+            return new PersistentArray<>(res, getCount() - 1, modificationCount + 1);
         }
 
         // Удаляем элемент из текущей коллекции узлов.
         removeImpl(nodes, modificationCount, index);
-        return new PersistentArray<>(nodes, count - 1, modificationCount + 1);
+        return new PersistentArray<>(nodes, getCount() - 1, modificationCount + 1);
     }
 
     /**
      * Очистка массива (установка всех элементов в null).
      */
     public PersistentArray<T> clearAll() {
-        if (nodes.maxModification.value > modificationCount) {
+        if (nodes.getMaxModification().getValue() > modificationCount) {
             var res = reassembleNodes(); // Пересобираем узлы.
             clear(res, modificationCount); // Очищаем массив.
             return new PersistentArray<>(res, 0, modificationCount + 1);
@@ -249,18 +230,18 @@ public class PersistentArray<T> extends BasePersistentCollection<Integer, T, Lis
      * Получение элемента по индексу.
      */
     public T get(Integer index) {
-        if (index < 0 || index >= count) {
+        if (index < 0 || index >= getCount()) {
             throw new IndexOutOfBoundsException(index);
         }
-        return nodes.content.get(index).value(modificationCount); // Возвращаем значение на текущем шаге.
+        return nodes.getContent().get(index).value(modificationCount); // Возвращаем значение на текущем шаге.
     }
 
 
     public Iterator<T> iterator() {
-        return nodes.content
+        return nodes.getContent()
                 .stream()
                 .filter(
-                        n -> n.modifications.toList()
+                        n -> n.getModifications().toList()
                                 .stream()
                                 .anyMatch(m -> m.getKey() <= modificationCount)) // Только актуальные узлы.
                 .map(n -> n.value(modificationCount)) // Возвращаем значения узлов.
@@ -279,7 +260,7 @@ public class PersistentArray<T> extends BasePersistentCollection<Integer, T, Lis
      * Повтор изменений на один шаг вперёд.
      */
     public PersistentArray<T> redo() {
-        return modificationCount == nodes.maxModification.value ? this : new PersistentArray<>(nodes,
+        return modificationCount == nodes.getMaxModification().getValue() ? this : new PersistentArray<>(nodes,
                 recalculateCount(modificationCount + 1), modificationCount + 1);
     }
 
@@ -288,9 +269,9 @@ public class PersistentArray<T> extends BasePersistentCollection<Integer, T, Lis
      */
     @Override
     protected int recalculateCount(int modificationStep) {
-        return (int) nodes.content
+        return (int) nodes.getContent()
                 .stream()
-                .filter(n -> n.modifications.toList()
+                .filter(n -> n.getModifications().toList()
                         .stream()
                         .anyMatch(m -> m.getKey() <= modificationStep)
                 ).count();

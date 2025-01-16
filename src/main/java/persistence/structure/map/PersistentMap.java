@@ -2,8 +2,6 @@ package persistence.structure.map;
 
 import persistence.base.*;
 import persistence.base.tree.BinaryTree;
-import persistence.structure.array.PersistentArray;
-import persistence.structure.list.PersistentLinkedList;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,11 +23,11 @@ public class PersistentMap<TK, TV> extends BasePersistentCollection<TK, TV, Bina
 
         var allModifications = new ArrayList<Map.Entry<TK, Map.Entry<Integer, TV>>>();
 
-        for (var entry : nodes.content) {
+        for (var entry : nodes.getContent()) {
             var nodeKey = entry.getKey();
             var persistentNode = entry.getValue();
 
-            var neededModifications = persistentNode.modifications.toList()
+            var neededModifications = persistentNode.getModifications().toList()
                     .stream()
                     .filter(m -> m.getKey() <= modificationCount)
                     .map(m -> Map.entry(nodeKey, m))
@@ -77,43 +75,43 @@ public class PersistentMap<TK, TV> extends BasePersistentCollection<TK, TV, Bina
     }
 
     public PersistentMap<TK, TV> add(TK key, TV value) {
-        var tryNode = nodes.content.get(key);
-        if (tryNode != null && tryNode.modifications.toList().stream().anyMatch(m -> m.getKey() <= modificationCount)) {
+        var tryNode = nodes.getContent().get(key);
+        if (tryNode != null && tryNode.getModifications().toList().stream().anyMatch(m -> m.getKey() <= modificationCount)) {
             throw new IllegalArgumentException("Such a key is already exists!");
         }
 
-        if (nodes.maxModification.value > modificationCount) {
+        if (nodes.getMaxModification().getValue() > modificationCount) {
             var res = reassembleNodes();
             implAdd(res, modificationCount, key, value);
 
-            return new PersistentMap<>(res, count + 1, modificationCount + 1);
+            return new PersistentMap<>(res, getCount() + 1, modificationCount + 1);
         }
 
         implAdd(nodes, modificationCount, key, value);
 
-        return new PersistentMap<>(nodes, count + 1, modificationCount + 1);
+        return new PersistentMap<>(nodes, getCount() + 1, modificationCount + 1);
     }
 
     public PersistentMap<TK, TV> remove(TK key) {
-        var tryNode = nodes.content.get(key);
-        if (tryNode == null || tryNode.modifications.toList().stream().allMatch(m -> m.getKey() > modificationCount)) {
+        var tryNode = nodes.getContent().get(key);
+        if (tryNode == null || tryNode.getModifications().toList().stream().allMatch(m -> m.getKey() > modificationCount)) {
             return this;
         }
 
-        if (nodes.maxModification.value > modificationCount) {
+        if (nodes.getMaxModification().getValue() > modificationCount) {
             var res = reassembleNodes();
             implRemove(res, modificationCount, key);
 
-            return new PersistentMap<>(res, count - 1, modificationCount + 1);
+            return new PersistentMap<>(res, getCount() - 1, modificationCount + 1);
         }
 
         implRemove(nodes, modificationCount, key);
 
-        return new PersistentMap<>(nodes, count - 1, modificationCount + 1);
+        return new PersistentMap<>(nodes, getCount() - 1, modificationCount + 1);
     }
 
     public PersistentMap<TK, TV> clear() {
-        if (nodes.maxModification.value > modificationCount) {
+        if (nodes.getMaxModification().getValue() > modificationCount) {
             var res = reassembleNodes();
             implClear(res, modificationCount);
 
@@ -126,36 +124,36 @@ public class PersistentMap<TK, TV> extends BasePersistentCollection<TK, TV, Bina
     }
 
     public PersistentMap<TK, TV> replace(TK key, TV value) {
-        var tryNode = nodes.content.get(key);
-        if (tryNode == null || tryNode.modifications.toList().stream().allMatch(m -> m.getKey() > modificationCount)) {
+        var tryNode = nodes.getContent().get(key);
+        if (tryNode == null || tryNode.getModifications().toList().stream().allMatch(m -> m.getKey() > modificationCount)) {
             throw new IllegalArgumentException("Such a key does not exists!");
         }
 
-        if (nodes.maxModification.value > modificationCount) {
+        if (nodes.getMaxModification().getValue() > modificationCount) {
             var res = reassembleNodes();
             implReplace(res, modificationCount, key, value);
 
-            return new PersistentMap<>(res, count, modificationCount + 1);
+            return new PersistentMap<>(res, getCount(), modificationCount + 1);
         }
 
         implReplace(nodes, modificationCount, key, value);
 
-        return new PersistentMap<>(nodes, count, modificationCount + 1);
+        return new PersistentMap<>(nodes, getCount(), modificationCount + 1);
     }
 
     public TV get(TK key) {
-        var node = nodes.content.get(key);
+        var node = nodes.getContent().get(key);
 
         return node == null
                 ? null
-                : node.modifications.findNearestLess(modificationCount);
+                : node.getModifications().findNearestLess(modificationCount);
     }
 
     public Set<TK> keySet() {
-        return nodes.content.
+        return nodes.getContent().
                 toList().
                 stream().
-                filter(k -> k.getValue().modifications.
+                filter(k -> k.getValue().getModifications().
                         toList().
                         stream().
                         anyMatch(m -> m.getKey() <= modificationCount)
@@ -166,10 +164,10 @@ public class PersistentMap<TK, TV> extends BasePersistentCollection<TK, TV, Bina
 
 
     public Set<TV> valueSet() {
-        return nodes.content.
+        return nodes.getContent().
                 toList().
                 stream().
-                filter(k -> k.getValue().modifications.
+                filter(k -> k.getValue().getModifications().
                         toList().
                         stream().
                         anyMatch(m -> m.getKey() <= modificationCount)
@@ -179,9 +177,9 @@ public class PersistentMap<TK, TV> extends BasePersistentCollection<TK, TV, Bina
     }
 
     public Iterator<Map.Entry<TK, TV>> iterator() {
-        return nodes.content.toList().stream()
+        return nodes.getContent().toList().stream()
                 .filter(k ->
-                        k.getValue().modifications.toList().stream().anyMatch(m -> m.getKey() <= modificationCount))
+                        k.getValue().getModifications().toList().stream().anyMatch(m -> m.getKey() <= modificationCount))
                 .map(k ->
                         Map.entry(k.getKey(), k.getValue().value(modificationCount))).toList().iterator();
     }
@@ -192,7 +190,7 @@ public class PersistentMap<TK, TV> extends BasePersistentCollection<TK, TV, Bina
     }
 
     public PersistentMap<TK, TV> redo() {
-        return modificationCount == nodes.maxModification.value
+        return modificationCount == nodes.getMaxModification().getValue()
                 ? this
                 : new PersistentMap<>(
                 nodes,
@@ -202,9 +200,9 @@ public class PersistentMap<TK, TV> extends BasePersistentCollection<TK, TV, Bina
     }
 
     protected int recalculateCount(int modificationStep) {
-        return (int) nodes.content.toList()
+        return (int) nodes.getContent().toList()
                 .stream()
-                .filter(n -> n.getValue().modifications.toList()
+                .filter(n -> n.getValue().getModifications().toList()
                         .stream()
                         .anyMatch(m -> m.getKey() <= modificationStep))
                 .count();

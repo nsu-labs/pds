@@ -20,15 +20,15 @@ class DoubleLinkedDataTest {
         DoubleLinkedData<String> data = new DoubleLinkedData<>(nextNode, prevNode, valueNode);
 
         // Проверяем, что поля корректно установлены
-        assertSame(nextNode, data.next,
+        assertSame(nextNode, data.getNext(),
                 "Поле 'next' должно соответствовать переданному узлу");
-        assertSame(prevNode, data.previous,
+        assertSame(prevNode, data.getPrevious(),
                 "Поле 'previous' должно соответствовать переданному узлу");
-        assertSame(valueNode, data.value,
+        assertSame(valueNode, data.getValue(),
                 "Поле 'value' должно соответствовать переданному узлу");
 
         // Проверяем, что ID сгенерировался (не null)
-        assertNotNull(data.id,
+        assertNotNull(data.getId(),
                 "ID должен быть автоматически сгенерированным непустым UUID");
     }
 
@@ -46,15 +46,15 @@ class DoubleLinkedDataTest {
         DoubleLinkedData<String> data = new DoubleLinkedData<>(nextNode, prevNode, valueNode, customId);
 
         // Проверяем, что поля корректно установлены
-        assertSame(nextNode, data.next,
+        assertSame(nextNode, data.getNext(),
                 "Поле 'next' должно соответствовать переданному узлу");
-        assertSame(prevNode, data.previous,
+        assertSame(prevNode, data.getPrevious(),
                 "Поле 'previous' должно соответствовать переданному узлу");
-        assertSame(valueNode, data.value,
+        assertSame(valueNode, data.getValue(),
                 "Поле 'value' должно соответствовать переданному узлу");
 
         // Проверяем, что ID установлен именно тот, который мы передали
-        assertEquals(customId, data.id,
+        assertEquals(customId, data.getId(),
                 "ID должен совпадать с переданным в конструктор");
     }
 
@@ -69,7 +69,7 @@ class DoubleLinkedDataTest {
         valueNode.update(5, "Updated");
 
         // Проверяем, что при запросе на нужном шаге получаем ожидаемое значение
-        assertEquals("Updated", data.value.value(5),
+        assertEquals("Updated", data.getValue().value(5),
                 "valueNode должен вернуть 'Updated' на шаге 5");
     }
 }

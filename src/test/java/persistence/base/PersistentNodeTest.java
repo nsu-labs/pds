@@ -1,7 +1,6 @@
 package persistence.base;
 
 import org.junit.jupiter.api.Test;
-import persistence.base.tree.BinaryTree;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -20,7 +19,7 @@ class PersistentNodeTest {
                 "На шаге 0 должно быть значение 'Initial'");
 
         // Проверяем, что бинарное дерево создано не null
-        assertNotNull(node.modifications,
+        assertNotNull(node.getModifications(),
                 "Должно существовать дерево 'modifications'");
     }
 

@@ -9,7 +9,7 @@ import persistence.base.tree.BinaryTree;
  */
 public class PersistentNode<TV> {
     // Дерево для хранения изменений с привязкой к шагу модификации
-    public BinaryTree<Integer, TV> modifications = new BinaryTree<>();
+    private BinaryTree<Integer, TV> modifications = new BinaryTree<>();
 
     /**
      * Конструктор для создания узла с начальными данными.
@@ -28,7 +28,7 @@ public class PersistentNode<TV> {
      * @return Значение, соответствующее ближайшему меньшему шагу.
      */
     public TV value(int accessStep) {
-        return modifications.findNearestLess(accessStep); // Находим ближайшее значение по шагу
+        return getModifications().findNearestLess(accessStep); // Находим ближайшее значение по шагу
     }
 
     /**
@@ -39,7 +39,15 @@ public class PersistentNode<TV> {
      * @return Текущий узел после обновления.
      */
     public PersistentNode<TV> update(int accessStep, TV value) {
-        modifications.insert(accessStep, value); // Вставляем новое значение в дерево изменений
+        getModifications().insert(accessStep, value); // Вставляем новое значение в дерево изменений
         return this; // Возвращаем текущий узел для цепочного вызова
+    }
+
+    public BinaryTree<Integer, TV> getModifications() {
+        return modifications;
+    }
+
+    public void setModifications(BinaryTree<Integer, TV> modifications) {
+        this.modifications = modifications;
     }
 }
